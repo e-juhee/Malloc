@@ -160,7 +160,7 @@ static void *coalesce(void *bp)
     {
         size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
         PUT(HDRP(bp), PACK(size, 0)); // 현재 블록 헤더 재설정
-        PUT(FTRP(bp), PACK(size, 0)); // 현재 블록 푸터 재설정
+        PUT(FTRP(bp), PACK(size, 0)); // 다음 블록 푸터 재설정 (위에서 헤더를 재설정했으므로, FTRP(bp)는 합쳐질 다음 블록의 푸터가 됨)
     }
     else if (!prev_alloc && next_alloc) // 이전 블록만 빈 경우
     {

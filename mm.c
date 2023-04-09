@@ -241,15 +241,15 @@ static void splice_free_block(void *bp)
     // 이전 블록의 SUCC을 다음 가용 블록으로 연결
     GET_SUCC(GET_PRED(bp)) = GET_SUCC(bp);
     // 다음 블록의 PRED를 이전 블록으로 변경
-    if (GET_SUCC(bp) != NULL)
+    if (GET_SUCC(bp) != NULL) // 다음 가용 블록이 있을 경우만
         GET_PRED(GET_SUCC(bp)) = GET_PRED(bp);
 }
 
 // 가용 리스트의 맨 앞에 현재 블록을 추가하는 함수
 static void add_free_block(void *bp)
 {
-    GET_SUCC(bp) = free_listp; // bp의 SUCC은 루트가 가리키던 블록
-    if (free_listp != NULL)
-        GET_PRED(free_listp) = bp; // 루트였던 블록의 PRED는 bp
-    free_listp = bp;               // 루트가 현재 블록을 가리키도록 변경
+    GET_SUCC(bp) = free_listp;     // bp의 SUCC은 루트가 가리키던 블록
+    if (free_listp != NULL)        // free list에 블록이 존재했을 경우만
+        GET_PRED(free_listp) = bp; // 루트였던 블록의 PRED를 추가된 블록으로 연결
+    free_listp = bp;               // 루트를 현재 블록으로 변경
 }

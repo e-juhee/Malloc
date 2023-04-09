@@ -39,12 +39,10 @@ team_t team = {
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp)-WSIZE))) // 다음 블록의 포인터
 #define PREV_BLKP(bp) ((char *)(bp)-GET_SIZE(((char *)(bp)-DSIZE)))   // 이전 블록의 포인터
 
-
 #define GET_SUCC(bp) (*(unsigned int *)((char *)(bp) + WSIZE)) // 다음 가용 블록의 주소
 #define GET_PRED(bp) (*(unsigned int *)(bp))                   // 이전 가용 블록의 주소
 
 static char *free_listp; // 가용 리스트의 맨 앞 블록의 bp
-
 static void *extend_heap(size_t words);
 static void *coalesce(void *bp);
 static void *find_fit(size_t asize);
@@ -219,8 +217,8 @@ static void place(void *bp, size_t asize)
     {
         PUT(HDRP(bp), PACK(asize, 1)); // 현재 블록에는 필요한 만큼만 할당
         PUT(FTRP(bp), PACK(asize, 1));
+        bp = NEXT_BLKP(bp); // 다음 블록으로 이동
 
-        bp = NEXT_BLKP(bp);                    // 다음 블록으로 이동
         PUT(HDRP(bp), PACK(csize - asize, 0)); // 남은 크기를 다음 블록에 할당(가용 블록)
         PUT(FTRP(bp), PACK(csize - asize, 0));
         add_free_block(bp); // 남은 블록을 free_list에 추가

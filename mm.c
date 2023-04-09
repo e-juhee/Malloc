@@ -105,7 +105,6 @@ void *mm_realloc(void *ptr, size_t size)
     if (ptr == NULL) // 포인터가 NULL인 경우 할당만 수행
     {
         return mm_malloc(size);
-        return;
     }
     if (size <= 0) // size가 0인 경우 메모리 반환만 수행
     {
@@ -200,8 +199,8 @@ static void place(void *bp, size_t asize)
     {
         PUT(HDRP(bp), PACK(asize, 1)); // 현재 블록에는 필요한 만큼만 할당
         PUT(FTRP(bp), PACK(asize, 1));
-        bp = NEXT_BLKP(bp); // 다음 블록으로 이동
 
+        bp = NEXT_BLKP(bp);                    // 다음 블록으로 이동
         PUT(HDRP(bp), PACK(csize - asize, 0)); // 남은 크기를 다음 블록에 할당(가용 블록)
         PUT(FTRP(bp), PACK(csize - asize, 0));
     }

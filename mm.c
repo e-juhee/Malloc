@@ -39,12 +39,10 @@ team_t team = {
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp)-WSIZE))) // 다음 블록의 포인터
 #define PREV_BLKP(bp) ((char *)(bp)-GET_SIZE(((char *)(bp)-DSIZE)))   // 이전 블록의 포인터
 
-
 #define GET_SUCC(bp) (*(unsigned int *)((char *)(bp) + WSIZE)) // 다음 가용 블록의 주소
 #define GET_PRED(bp) (*(unsigned int *)(bp))                   // 이전 가용 블록의 주소
 
 static char *free_listp; // 가용 리스트의 맨 앞 블록의 bp
-
 static void *extend_heap(size_t words);
 static void *coalesce(void *bp);
 static void *find_fit(size_t asize);
@@ -219,8 +217,8 @@ static void place(void *bp, size_t asize)
     {
         PUT(HDRP(bp), PACK(asize, 1)); // 현재 블록에는 필요한 만큼만 할당
         PUT(FTRP(bp), PACK(asize, 1));
+        bp = NEXT_BLKP(bp); // 다음 블록으로 이동
 
-        bp = NEXT_BLKP(bp);                    // 다음 블록으로 이동
         PUT(HDRP(bp), PACK(csize - asize, 0)); // 남은 크기를 다음 블록에 할당(가용 블록)
         PUT(FTRP(bp), PACK(csize - asize, 0));
         add_free_block(bp); // 남은 블록을 free_list에 추가
@@ -243,15 +241,15 @@ static void splice_free_block(void *bp)
     // 이전 블록의 SUCC을 다음 가용 블록으로 연결
     GET_SUCC(GET_PRED(bp)) = GET_SUCC(bp);
     // 다음 블록의 PRED를 이전 블록으로 변경
-    if (GET_SUCC(bp) != NULL)
+    if (GET_SUCC(bp) != NULL) // 다음 가용 블록이 있을 경우만
         GET_PRED(GET_SUCC(bp)) = GET_PRED(bp);
 }
 
 // 가용 리스트의 맨 앞에 현재 블록을 추가하는 함수
 static void add_free_block(void *bp)
 {
-    GET_SUCC(bp) = free_listp; // bp의 SUCC은 루트가 가리키던 블록
-    if (free_listp != NULL)
-        GET_PRED(free_listp) = bp; // 루트였던 블록의 PRED는 bp
-    free_listp = bp;               // 루트가 현재 블록을 가리키도록 변경
+    GET_SUCC(bp) = free_listp;     // bp의 SUCC은 루트가 가리키던 블록
+    if (free_listp != NULL)        // free list에 블록이 존재했을 경우만
+        GET_PRED(free_listp) = bp; // 루트였던 블록의 PRED를 추가된 블록으로 연결
+    free_listp = bp;               // 루트를 현재 블록으로 변경
 }

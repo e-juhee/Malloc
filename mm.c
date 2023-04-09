@@ -59,10 +59,10 @@ int mm_init(void)
     PUT(free_listp, 0);                                // 정렬 패딩
     PUT(free_listp + (1 * WSIZE), PACK(2 * WSIZE, 1)); // 프롤로그 Header
     PUT(free_listp + (2 * WSIZE), PACK(2 * WSIZE, 1)); // 프롤로그 Footer
-    PUT(free_listp + (3 * WSIZE), PACK(4 * WSIZE, 1)); // 첫 가용 블록의 헤더
+    PUT(free_listp + (3 * WSIZE), PACK(4 * WSIZE, 0)); // 첫 가용 블록의 헤더
     PUT(free_listp + (4 * WSIZE), NULL);               // 이전 가용 블록의 주소
     PUT(free_listp + (5 * WSIZE), NULL);               // 다음 가용 블록의 주소
-    PUT(free_listp + (6 * WSIZE), PACK(4 * WSIZE, 1)); // 첫 가용 블록의 푸터
+    PUT(free_listp + (6 * WSIZE), PACK(4 * WSIZE, 0)); // 첫 가용 블록의 푸터
     PUT(free_listp + (7 * WSIZE), PACK(0, 1));         // 에필로그 Header: 프로그램이 할당한 마지막 블록의 뒤에 위치하며, 블록이 할당되지 않은 상태를 나타냄
 
     free_listp += (4 * WSIZE); // 첫번째 가용 블록의 bp
@@ -241,13 +241,15 @@ static void splice_free_block(void *bp)
     // 이전 블록의 SUCC을 다음 가용 블록으로 연결
     GET_SUCC(GET_PRED(bp)) = GET_SUCC(bp);
     // 다음 블록의 PRED를 이전 블록으로 변경
-    GET_PRED(GET_SUCC(bp)) = GET_PRED(bp);
+    if (GET_SUCC(bp) != NULL)
+        GET_PRED(GET_SUCC(bp)) = GET_PRED(bp);
 }
 
 // 가용 리스트의 맨 앞에 현재 블록을 추가하는 함수
 static void add_free_block(void *bp)
 {
     GET_SUCC(bp) = free_listp; // bp의 SUCC은 루트가 가리키던 블록
-    GET_PRED(free_listp) = bp; // 루트였던 블록의 PRED는 bp
-    free_listp = bp;           // 루트가 현재 블록을 가리키도록 변경
+    if (free_listp != NULL)
+        GET_PRED(free_listp) = bp; // 루트였던 블록의 PRED는 bp
+    free_listp = bp;               // 루트가 현재 블록을 가리키도록 변경
 }

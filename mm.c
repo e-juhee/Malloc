@@ -40,45 +40,35 @@ team_t team = {
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp)-WSIZE))) // 다음 블록의 포인터
 #define PREV_BLKP(bp) ((char *)(bp)-GET_SIZE(((char *)(bp)-DSIZE)))   // 이전 블록의 포인터
 
-#define GET_SUCC(bp) (*(unsigned int *)((char *)(bp) + WSIZE)) // 다음 가용 블록의 주소
-#define GET_PRED(bp) (*(unsigned int *)(bp))                   // 이전 가용 블록의 주소
-static char *heap_listp;                                       // 클래스의 시작
-
+static char *heap_listp;                                                            // 클래스의 시작
+#define GET_SUCC(bp) (*(unsigned int *)((char *)(bp) + WSIZE))                      // 다음 가용 블록의 주소
+#define GET_PRED(bp) (*(unsigned int *)(bp))                                        // 이전 가용 블록의 주소
 #define GET_ROOT(class) (*(unsigned int *)((char *)(heap_listp) + (WSIZE * class))) // 해당 클래스의 루트
 
 static void *extend_heap(size_t words);
 static void *coalesce(void *bp);
 static void *find_fit(size_t asize);
 static void place(void *bp, size_t asize);
-
 static void splice_free_block(void *bp); // 가용 리스트에서 제거
 static void add_free_block(void *bp);    // 가용 리스트에 추가
-int get_class(size_t size);
+static int get_class(size_t size);
 
 int mm_init(void)
 {
     // 초기 힙 생성
     if ((heap_listp = mem_sbrk((SEGREGATED_SIZE + 4) * WSIZE)) == (void *)-1) // 8워드 크기의 힙 생성, heap_listp에 힙의 시작 주소값 할당(가용 블록만 추적)
         return -1;
-    PUT(heap_listp, 0); // 정렬 패딩
-
+    PUT(heap_listp, 0);                                                    // 정렬 패딩
     PUT(heap_listp + (1 * WSIZE), PACK((SEGREGATED_SIZE + 2) * WSIZE, 1)); // 프롤로그 Header (크기: 헤더 1 + 푸터 1 + segregated list 크기)
-    // Segregated List 영역
     for (int i = 0; i < SEGREGATED_SIZE; i++)
-    {
         PUT(heap_listp + ((2 + i) * WSIZE), NULL);
-    }
     PUT(heap_listp + ((SEGREGATED_SIZE + 2) * WSIZE), PACK((SEGREGATED_SIZE + 2) * WSIZE, 1)); // 프롤로그 Footer
     PUT(heap_listp + ((SEGREGATED_SIZE + 3) * WSIZE), PACK(0, 1));                             // 에필로그 Header: 프로그램이 할당한 마지막 블록의 뒤에 위치
-
     heap_listp += (2 * WSIZE);
-
-    // 힙을 CHUNKSIZE bytes로 확장 후 적합한 seg_list에 추가
     if (extend_heap(4) == NULL)
         return -1;
     if (extend_heap(CHUNKSIZE / WSIZE) == NULL)
         return -1;
-
     return 0;
 }
 
@@ -88,8 +78,7 @@ void *mm_malloc(size_t size)
     size_t extendsize; // 확장할 사이즈
     char *bp;
 
-    // 잘못된 요청 분기
-    if (size == 0)
+    if (size == 0) // 잘못된 요청 분기
         return NULL;
 
     if (size <= DSIZE)     // 8바이트 이하이면
@@ -124,9 +113,7 @@ void mm_free(void *bp)
 void *mm_realloc(void *ptr, size_t size)
 {
     if (ptr == NULL) // 포인터가 NULL인 경우 할당만 수행
-    {
         return mm_malloc(size);
-    }
     if (size <= 0) // size가 0인 경우 메모리 반환만 수행
     {
         mm_free(ptr);

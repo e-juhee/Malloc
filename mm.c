@@ -32,7 +32,7 @@ team_t team = {
 /* 가용 리스트를 접근/순회하는 데 사용할 매크로 */
 #define PACK(size, alloc) (size | alloc)                              // size와 할당 비트를 결합, header와 footer에 저장할 값
 #define GET(p) (*(unsigned int *)(p))                                 // p가 참조하는 워드 반환 (포인터라서 직접 역참조 불가능 -> 타입 캐스팅)
-#define PUT(p, val) (*(unsigned int *)(p) = (val))                    // p에 val 저장
+#define PUT(p, val) (*(unsigned int *)(p) = (unsigned int)(val))      // p에 val 저장
 #define GET_SIZE(p) (GET(p) & ~0x7)                                   // 사이즈 (~0x7: ...11111000, '&' 연산으로 뒤에 세자리 없어짐)
 #define GET_ALLOC(p) (GET(p) & 0x1)                                   // 할당 상태
 #define HDRP(bp) ((char *)(bp)-WSIZE)                                 // Header 포인터
@@ -40,10 +40,10 @@ team_t team = {
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(((char *)(bp)-WSIZE))) // 다음 블록의 포인터
 #define PREV_BLKP(bp) ((char *)(bp)-GET_SIZE(((char *)(bp)-DSIZE)))   // 이전 블록의 포인터
 
-static char *heap_listp;                                                            // 클래스의 시작
-#define GET_SUCC(bp) (*(unsigned int *)((char *)(bp) + WSIZE))                      // 다음 가용 블록의 주소
-#define GET_PRED(bp) (*(unsigned int *)(bp))                                        // 이전 가용 블록의 주소
-#define GET_ROOT(class) (*(unsigned int *)((char *)(heap_listp) + (WSIZE * class))) // 해당 클래스의 루트
+static char *heap_listp;                                // 클래스의 시작
+#define GET_SUCC(bp) (*(void **)((char *)(bp) + WSIZE)) // 다음 가용 블록의 주소
+#define GET_PRED(bp) (*(void **)(bp))                   // 이전 가용 블록의 주소
+#define GET_ROOT(class) (*(void **)((char *)(heap_listp) + (WSIZE * class)))
 
 static void *extend_heap(size_t words);
 static void *coalesce(void *bp);
@@ -220,8 +220,8 @@ static void place(void *bp, size_t asize)
         PUT(FTRP(bp), PACK(asize, 1));
         bp = NEXT_BLKP(bp); // 다음 블록으로 이동
 
-        PUT(HDRP(bp), PACK(csize - asize, 0)); // 남은 크기를 다음 블록에 할당(가용 블록)
-        PUT(FTRP(bp), PACK(csize - asize, 0));
+        PUT(HDRP(bp), PACK((csize - asize), 0)); // 남은 크기를 다음 블록에 할당(가용 블록)
+        PUT(FTRP(bp), PACK((csize - asize), 0));
         add_free_block(bp); // 남은 블록을 free_list에 추가
     }
     else

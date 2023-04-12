@@ -267,14 +267,6 @@ static void add_free_block(void *bp)
         return;
     }
 
-    if (bp < currentp)
-    {
-        GET_SUCC(bp) = currentp;
-        GET_PRED(currentp) = bp;
-        free_listp = bp;
-        return;
-    }
-
     while (currentp < bp) // 검사중인 주소가 추가하려는 블록의 주소보다 작을 동안 반복
     { 
         if (GET_SUCC(currentp) == NULL || GET_SUCC(currentp) > bp)

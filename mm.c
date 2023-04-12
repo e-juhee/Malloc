@@ -80,18 +80,20 @@ void *mm_malloc(size_t size)
     if (size == 0) // 잘못된 요청 분기
         return NULL;
 
+    /* 사이즈 조정 */
     while (asize < size + DSIZE) // 요청받은 size에 8(헤더와 푸터 크기)를 더한 값을 2의 n승이 되도록 올림
     {
         asize <<= 1;
     }
 
-    if ((bp = find_fit(asize)) != NULL) // 가용 블록 검색
+    /* 가용 블록 검색 */
+    if ((bp = find_fit(asize)) != NULL)
     {
         place(bp, asize); // 할당
         return bp;        // 새로 할당된 블록의 포인터 리턴
     }
 
-    // 적합한 블록이 없을 경우 힙확장
+    /* 적합한 블록이 없을 경우 힙확장 */
     extendsize = MAX(asize, CHUNKSIZE);
     if ((bp = extend_heap(extendsize / WSIZE)) == NULL)
         return NULL;
@@ -151,7 +153,7 @@ static void *coalesce(void *bp)
     while (1)
     {
         // 좌우 버디의 bp 파악
-        if ((bp - root) & csize) // 현재 블록에서 힙까지의 메모리 합(bp - root)과 csize가 중복되는 비트가 있다면 현재 블록은 오른쪽 버디에 해당
+        if ((bp - root) & csize) // 첫번째 블록에서부터 현재 블록까지의 메모리 합(bp - root)과 csize가 중복되는 비트가 있다면 현재 블록은 오른쪽 버디에 해당
         {
             left_buddyp = bp - csize;
             right_buddyp = bp;

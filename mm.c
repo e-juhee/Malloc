@@ -79,21 +79,21 @@ void *mm_malloc(size_t size)
     // 잘못된 요청 분기
     if (size == 0)
         return NULL;
-   
-   /* 사이즈 조정 */
+
+    /* 사이즈 조정 */
     if (size <= DSIZE)     // 8바이트 이하이면
         asize = 2 * DSIZE; // 최소 블록 크기 16바이트 할당 (헤더 4 + 푸터 4 + 저장공간 8)
     else
         asize = DSIZE * ((size + DSIZE + DSIZE - 1) / DSIZE); // 8배수로 올림 처리
 
     /* 가용 블록 검색 */
-    if ((bp = find_fit(asize)) != NULL) 
+    if ((bp = find_fit(asize)) != NULL)
     {
         place(bp, asize); // 할당
         return bp;        // 새로 할당된 블록의 포인터 리턴
     }
 
-        /* 적합한 블록이 없을 경우 힙확장 */
+    /* 적합한 블록이 없을 경우 힙확장 */
     extendsize = MAX(asize, CHUNKSIZE);
     if ((bp = extend_heap(extendsize / WSIZE)) == NULL)
         return NULL;
@@ -113,7 +113,7 @@ void mm_free(void *bp)
 // `기존 메모리 블록의 포인터`, `새로운 크기`
 void *mm_realloc(void *ptr, size_t size)
 {
-        /* 예외 처리 */
+    /* 예외 처리 */
     if (ptr == NULL) // 포인터가 NULL인 경우 할당만 수행
         return mm_malloc(size);
 
@@ -134,9 +134,10 @@ void *mm_realloc(void *ptr, size_t size)
         copySize = size;                           // size로 크기 변경 (기존 메모리 블록보다 작은 크기에 할당하면, 일부 데이터만 복사)
 
     memcpy(newptr, ptr, copySize); // 새 블록으로 데이터 복사
+
+    /* 기존 블록 반환 */
+    mm_free(ptr);
     
-        /* 기존 블록 반환 */
-    mm_free(ptr);                  
     return newptr;
 }
 
@@ -219,11 +220,10 @@ static void place(void *bp, size_t asize)
     {
         PUT(HDRP(bp), PACK(asize, 1)); // 현재 블록에는 필요한 만큼만 할당
         PUT(FTRP(bp), PACK(asize, 1));
-        bp = NEXT_BLKP(bp); // 다음 블록으로 이동
 
-        PUT(HDRP(bp), PACK((csize - asize), 0)); // 남은 크기를 다음 블록에 할당(가용 블록)
-        PUT(FTRP(bp), PACK((csize - asize), 0));
-        add_free_block(bp); // 남은 블록을 free_list에 추가
+        PUT(HDRP(NEXT_BLKP(bp)), PACK((csize - asize), 0)); // 남은 크기를 다음 블록에 할당(가용 블록)
+        PUT(FTRP(NEXT_BLKP(bp)), PACK((csize - asize), 0));
+        add_free_block(NEXT_BLKP(bp)); // 남은 블록을 free_list에 추가
     }
     else
     {
@@ -255,4 +255,3 @@ static void add_free_block(void *bp)
         GET_PRED(free_listp) = bp; // 루트였던 블록의 PRED를 추가된 블록으로 연결
     free_listp = bp;               // 루트를 현재 블록으로 변경
 }
-

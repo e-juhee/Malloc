@@ -14,20 +14,16 @@ team_t team = {
     "",
     ""};
 
-/* single word (4) or double word (8) alignment */
 #define ALIGNMENT 8
 
-/* rounds up to the nearest multiple of ALIGNMENT */
 #define ALIGN(size) (((size) + (ALIGNMENT - 1)) & ~0x7)
-
-#define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
 
 /* 기본 상수 */
 #define WSIZE 4             // word size
 #define DSIZE 8             // double word size
 #define CHUNKSIZE (1 << 12) // 힙 확장을 위한 기본 크기 (= 초기 빈 블록의 크기)
 
-/* 가용 리스트를 접근/순회하는 데 사용할 매크로 */
+/* 힙에 접근/순회하는 데 사용할 매크로 */
 #define MAX(x, y) (x > y ? x : y)
 #define PACK(size, alloc) (size | alloc)                              // size와 할당 비트를 결합, header와 footer에 저장할 값
 #define GET(p) (*(unsigned int *)(p))                                 // p가 참조하는 워드 반환 (포인터라서 직접 역참조 불가능 -> 타입 캐스팅)
@@ -71,18 +67,20 @@ void *mm_malloc(size_t size)
     if (size == 0)
         return NULL;
 
+    /* 사이즈 조정 */
     if (size <= DSIZE)     // 8바이트 이하이면
         asize = 2 * DSIZE; // 최소 블록 크기 16바이트 할당 (헤더 4 + 푸터 4 + 저장공간 8)
     else
         asize = DSIZE * ((size + DSIZE + DSIZE - 1) / DSIZE); // 8배수로 올림 처리
 
-    if ((bp = find_fit(asize)) != NULL) // 가용 블록 검색
+    /* 가용 블록 검색 */
+    if ((bp = find_fit(asize)) != NULL)
     {
         place(bp, asize); // 할당
         return bp;        // 새로 할당된 블록의 포인터 리턴
     }
 
-    // 적합한 블록이 없을 경우 힙확장
+    /* 적합한 블록이 없을 경우 힙확장 */
     extendsize = MAX(asize, CHUNKSIZE);
     if ((bp = extend_heap(extendsize / WSIZE)) == NULL)
         return NULL;
@@ -102,6 +100,7 @@ void mm_free(void *bp)
 // `기존 메모리 블록의 포인터`, `새로운 크기`
 void *mm_realloc(void *ptr, size_t size)
 {
+    /* 예외 처리 */
     if (ptr == NULL) // 포인터가 NULL인 경우 할당만 수행
         return mm_malloc(size);
 
@@ -111,16 +110,20 @@ void *mm_realloc(void *ptr, size_t size)
         return 0;
     }
 
+    /* 새 블록에 할당 */
     void *newptr = mm_malloc(size); // 새로 할당한 블록의 포인터
     if (newptr == NULL)
         return NULL; // 할당 실패
 
+    /* 데이터 복사 */
     size_t copySize = GET_SIZE(HDRP(ptr)) - DSIZE; // payload만큼 복사
     if (size < copySize)                           // 기존 사이즈가 새 크기보다 더 크면
         copySize = size;                           // size로 크기 변경 (기존 메모리 블록보다 작은 크기에 할당하면, 일부 데이터만 복사)
 
     memcpy(newptr, ptr, copySize); // 새 블록으로 데이터 복사
-    mm_free(ptr);                  // 기존 블록 해제
+
+    /* 기존 블록 반환 */
+    mm_free(ptr);
 
     return newptr;
 }

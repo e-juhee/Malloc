@@ -20,8 +20,6 @@ team_t team = {
 /* rounds up to the nearest multiple of ALIGNMENT */
 #define ALIGN(size) (((size) + (ALIGNMENT - 1)) & ~0x7)
 
-#define SIZE_T_SIZE (ALIGN(sizeof(size_t)))
-
 /* 기본 상수 & 매크로 */
 #define WSIZE 4              // word size
 #define DSIZE 8              // double word size
@@ -247,14 +245,31 @@ static void splice_free_block(void *bp)
         GET_PRED(GET_SUCC(bp)) = GET_PRED(bp);
 }
 
-// 적합한 가용 리스트를 찾아서 맨 앞에 현재 블록을 추가하는 함수
+// 적합한 가용 리스트를 찾아서 주소 오름차순에 맞게 현재 블록을 추가하는 함수
 static void add_free_block(void *bp)
 {
     int class = get_class(GET_SIZE(HDRP(bp)));
-    GET_SUCC(bp) = GET_ROOT(class);     // bp의 해당 가용 리스트의 루트가 가리키던 블록
-    if (GET_ROOT(class) != NULL)        // list에 블록이 존재했을 경우만
-        GET_PRED(GET_ROOT(class)) = bp; // 루트였던 블록의 PRED를 추가된 블록으로 연결
-    GET_ROOT(class) = bp;
+    void *currentp = GET_ROOT(class);
+    if (currentp == NULL)
+    {
+        GET_ROOT(class) = bp;
+        GET_SUCC(bp) = NULL;
+        return;
+    }
+
+    while(currentp < bp)
+    {
+        if(GET_SUCC(currentp) == NULL || GET_SUCC(currentp) > bp)
+            break;
+        currentp = GET_SUCC(currentp);
+    }
+
+    GET_SUCC(bp) = GET_SUCC(currentp);
+    GET_SUCC(currentp) = bp;
+    GET_PRED(bp) = currentp;
+
+    if(GET_SUCC(bp) != NULL)
+        GET_PRED(GET_SUCC(bp)) = bp;
 }
 
 // 적합한 가용 리스트를 찾는 함수
